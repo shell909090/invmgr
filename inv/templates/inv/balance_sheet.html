@@ -1,0 +1,242 @@
+{% extends 'inv/base.html' %}
+{% load bootstrap3 %}
+
+{% block title %}资产负债表{% endblock %}
+
+{% block header %}
+<style>
+  .money {
+      width: 16%;
+      text-align: right;
+  }
+</style>
+{% endblock %}
+
+{% block body %}
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-sm-6">
+      <table class="table table-striped table-responsive">
+	<tbody>
+	  <tr>
+	    <td>资产</td>
+	    <td></td>
+	    {% for cur in curs %}
+	    <td class="money">{{cur.name}}</td>
+	    {% endfor %}
+	    <td class="money">CNY计价</td>
+	  </tr>
+	  <tr>
+	    <td>流动资产</td>
+	    <td></td>
+	    {% for cur in curs %}
+	    <td></td>
+	    {% endfor %}
+	    <td></td>
+	  </tr>
+	  {% for cat in sheet.1 %}
+	  <tr>
+	    <td></td>
+	    <td width="16%">
+	      {% if cat.0.id %}
+	      <a href="/admin/inv/account/?cat__id__exact={{cat.0.id}}">{{cat.0.name}}</a>
+	      {% else %}
+	      {{cat.0.name}}
+	      {% endif %}
+	    </td>
+	    {% for f in cat.1 %}
+	    <td class="money">{{f|floatformat:2}}</td>
+	    {% endfor %}
+	  </tr>
+	  {% endfor %}
+	</tbody>
+      </table>
+    </div>
+
+    <div class="col-sm-6">
+      <table class="table table-striped table-responsive">
+	<tbody>
+	  <tr>
+	    <td>负债</td>
+	    <td></td>
+	    {% for cur in curs %}
+	    <td class="money">{{cur.name}}</td>
+	    {% endfor %}
+	    <td class="money">CNY计价</td>
+	  </tr>
+	  <tr>
+	    <td>流动负债</td>
+	    <td></td>
+	    {% for cur in curs %}
+	    <td></td>
+	    {% endfor %}
+	    <td></td>
+	  </tr>
+	  {% for cat in sheet.2 %}
+	  <tr>
+	    <td></td>
+	    <td width="16%">
+	      {% if cat.0.id %}
+	      <a href="/admin/inv/account/?cat__id__exact={{cat.0.id}}">{{cat.0.name}}</a>
+	      {% else %}
+	      {{cat.0.name}}
+	      {% endif %}
+	    </td>
+	    {% for f in cat.1 %}
+	    <td class="money">{{f|floatformat:2}}</td>
+	    {% endfor %}
+	  </tr>
+	  {% endfor %}
+	</tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-sm-6">
+      <table class="table table-striped table-responsive">
+	<tbody>
+	  <tr>
+	    <td>固定资产</td>
+	    <td></td>
+	    {% for cur in curs %}
+	    <td width="16%"></td>
+	    {% endfor %}
+	    <td width="16%"></td>
+	  </tr>
+	  {% for cat in sheet.3 %}
+	  <tr>
+	    <td></td>
+	    <td width="16%">
+	      {% if cat.0.id %}
+	      <a href="/admin/inv/account/?cat__id__exact={{cat.0.id}}">{{cat.0.name}}</a>
+	      {% else %}
+	      {{cat.0.name}}
+	      {% endif %}
+	    </td>
+	    {% for f in cat.1 %}
+	    <td class="money">{{f|floatformat:2}}</td>
+	    {% endfor %}
+	  </tr>
+	  {% endfor %}
+	</tbody>
+      </table>
+    </div>
+
+    <div class="col-sm-6">
+      <table class="table table-striped table-responsive">
+	<tbody>
+	  <tr>
+	    <td>长期负债</td>
+	    <td></td>
+	    {% for cur in curs %}
+	    <td width="16%"></td>
+	    {% endfor %}
+	    <td width="16%"></td>
+	  </tr>
+	  {% for cat in sheet.4 %}
+	  <tr>
+	    <td></td>
+	    <td width="16%">
+	      {% if cat.0.id %}
+	      <a href="/admin/inv/account/?cat__id__exact={{cat.0.id}}">{{cat.0.name}}</a>
+	      {% else %}
+	      {{cat.0.name}}
+	      {% endif %}
+	    </td>
+	    {% for f in cat.1 %}
+	    <td class="money">{{f|floatformat:2}}</td>
+	    {% endfor %}
+	  </tr>
+	  {% endfor %}
+	</tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-sm-6">
+      <table class="table table-striped table-responsive">
+	<tbody>
+	  <tr>
+	    <td>投资</td>
+	    <td></td>
+	    {% for cur in curs %}
+	    <td width="16%"></td>
+	    {% endfor %}
+	    <td width="16%"></td>
+	  </tr>
+	  {% for cat in sheet.5 %}
+	  <tr>
+	    <td></td>
+	    <td width="16%">
+	      {% if cat.0.id %}
+	      <a href="/admin/inv/invproj/?cat__id__exact={{cat.0.id}}&isopen__exact=1">{{cat.0.name}}</a>
+	      {% else %}
+	      {{cat.0.name}}
+	      {% endif %}
+	    </td>
+	    {% for f in cat.1 %}
+	    <td class="money">{{f|floatformat:2}}</td>
+	    {% endfor %}
+	  </tr>
+	  {% endfor %}
+	</tbody>
+      </table>
+    </div>
+
+    <div class="col-sm-6">
+      <table class="table table-striped table-responsive">
+	<tbody>
+	  <tr>
+	    <td>流动性比例</td>
+	    <td class="money">{{liquidity_ratio|floatformat:-2}}</td>
+	  </tr>
+	  <tr>
+	    <td>资产负债率</td>
+	    <td class="money">{{debt_asset_ratio|floatformat:-2}}%</td>
+	  </tr>
+	</tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-sm-6">
+      <table class="table table-striped table-responsive">
+	<tbody>
+	  <tr>
+	    <td>总计</td>
+	    <td width="16%"></td>
+	    {% for f in assets %}
+	    <td class="money">{{f|floatformat:2}}</td>
+	    {% endfor %}
+	  </tr>
+	</tbody>
+      </table>
+    </div>
+
+    <div class="col-sm-6">
+      <table class="table table-striped table-responsive">
+	<tbody>
+	  <tr>
+	    <td>总计</td>
+	    <td width="16%"></td>
+	    {% for f in liabilities %}
+	    <td class="money">{{f|floatformat:2}}</td>
+	    {% endfor %}
+	  </tr>
+	  <tr>
+	    <td>净值</td>
+	    <td></td>
+	    {% for f in equity %}
+	    <td class="money">{{f|floatformat:2}}</td>
+	    {% endfor %}
+	  </tr>
+	</tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

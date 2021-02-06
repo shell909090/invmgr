@@ -1,0 +1,114 @@
+{% extends 'inv/base.html' %}
+{% load bootstrap3 %}
+
+{% block title %}收入表{% endblock %}
+
+{% block header %}
+<style>
+  .money {
+      width: 35%;
+      text-align: right;
+  }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="container">
+  <div class="row">
+    <div class="col-sm-6">
+      <table class="table table-striped table-responsive">
+	<tbody>
+	  <tr>
+	    <td>收入</td>
+	    <td width="35%"></td>
+	    <td></td>
+	  </tr>
+	  {% for name, value in income %}
+	  <tr>
+	    <td></td>
+	    <td width="35%">{{name}}</td>
+	    <td class="money">{{value}}</td>
+	  </tr>
+	  {% endfor %}
+	</tbody>
+      </table>
+    </div>
+
+    <div class="col-sm-6">
+      <table class="table table-striped table-responsive">
+	<tbody>
+	  <tr>
+	    <td>支出</td>
+	    <td width="35%"></td>
+	    <td></td>
+	  </tr>
+	  {% for name, value in outgoing %}
+	  <tr>
+	    <td></td>
+	    <td width="35%">{{name}}</td>
+	    <td class="money">{{value}}</td>
+	  </tr>
+	  {% endfor %}
+	</tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-sm-6">
+      <table class="table table-striped table-responsive">
+	<tbody>
+	  <tr>
+	    <td>投资</td>
+	    <td width="35%"></td>
+	    <td></td>
+	  </tr>
+	  {% for name, value in investments %}
+	  <tr>
+	    <td></td>
+	    <td width="35%">{{name}}</td>
+	    <td class="money">{{value}}</td>
+	  </tr>
+	  {% endfor %}
+	</tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-sm-6">
+      <table class="table table-striped table-responsive">
+	<tbody>
+	  <tr>
+	    <td>总计</td>
+	    <td width="35%"></td>
+	    <td class="money">{{total_income}}</td>
+	  </tr>
+	  <tr>
+	    <td>储蓄率</td>
+	    <td width="35%"></td>
+	    <td class="money">{{saving_rate|floatformat:-2}} %</td>
+	  </tr>
+	</tbody>
+      </table>
+    </div>
+    <div class="col-sm-6">
+      <table class="table table-striped table-responsive">
+	<tbody>
+	  <tr>
+	    <td>总计</td>
+	    <td width="35%"></td>
+	    <td class="money">{{total_outgoing}}</td>
+	  </tr>
+	  <tr>
+	    <td>净收入</td>
+	    <td width="35%"></td>
+	    <td class="money">{{net_income}}</td>
+	  </tr>
+	</tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,60 @@
+{% load bootstrap3 %}
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+  <head>
+    <title>{%block title%}{%endblock%}</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <meta name="author" content="shell">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    {% bootstrap_css %}
+    {% bootstrap_javascript %}
+    <style>
+      body {
+          font-family: Consolas,Monaco,Lucida Console,Liberation Mono,DejaVu Sans Mono,Bitstream Vera Sans Mono,Courier New, monospace;
+      }
+    </style>
+    {% block header %}
+    {% endblock %}
+  </head>
+
+  <body>
+
+    <nav class="navbar navbar-default">
+      <div class="container-fluid">
+	<div class="navbar-header">
+	  <a class="navbar-brand" href="#">投资管理</a>
+	</div>
+	{% block nav_left %}
+	{% endblock %}
+	<ul class="nav navbar-nav navbar-left">
+	  <li class="dropdown">
+	    <a class="dropdown-toggle" data-toggle="dropdown" href="#">
+	      功能链接
+	      <span class="caret"></span>
+	    </a>
+	    <ul class="dropdown-menu">
+	      <li><a href="/admin/">管理</a></li>
+	      <li><a href="{% url 'inv:balance_sheet' %}">资产负债表</a></li>
+	      <li><a href="{% url 'inv:income_outgoing_sheet' %}">收入支出表</a></li>
+	      <li><a href="{% url 'inv:income_details' %}">收入细节</a></li>
+	      <li><a href="{% url 'inv:outgoing_details' %}">支出细节</a></li>
+	    </ul>
+	  </li>
+	</ul>
+	<ul class="nav navbar-nav navbar-right">
+	  {% block nav_right %}
+	  {% endblock %}
+	</ul>
+      </div>
+    </nav>
+
+    {% bootstrap_messages %}
+
+    {%block body%}
+    {%endblock%}
+    
+    {% block script %}
+    {% endblock %}
+  </body>
+</html>

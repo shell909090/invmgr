@@ -1,0 +1,4 @@
+django >= 2.0
+django-tables2
+django-filter
+django-bootstrap3
