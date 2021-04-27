@@ -4,6 +4,7 @@ import decimal
 import datetime
 
 import pandas as pd
+from scipy.optimize import fsolve
 
 from django.http import HttpResponse
 from django.shortcuts import render
@@ -64,8 +65,12 @@ def balance_sheet(request):
             liabilities = add_vectory(liabilities, sums)
         sheet[i].append(({'name': '小记'}, sums))
 
-    liquidity_ratio = min(div_vectory(map(float, current_asset),
-                                      map(float, current_liabilities)))
+    liquidity_list = div_vectory(map(float, current_asset),
+                                 map(float, current_liabilities))
+    if liquidity_list:
+        liquidity_ratio = min(liquidity_list)
+    else:
+        liquidity_ratio = -1
     debt_asset_ratio = max(div_vectory(map(float, liabilities),
                                        map(float, assets)))
 
@@ -83,6 +88,7 @@ def balance_sheet(request):
 
 def income_outgoing_sheet(request):
     lastyear = datetime.date.today()-datetime.timedelta(days=365)
+    td = datetime.date.today()
 
     income = []
     for cat in AccountCategory.objects.filter(cat=1).all():
@@ -101,12 +107,20 @@ def income_outgoing_sheet(request):
     outgoing.append(('小计', s_outgoing))
 
     investments = []
+    iotab = []
     for cat in Category.objects.filter(cat=5).all():
-        num = sum((-proj.value for proj in cat.invproj_set.filter(isopen=False).all()))
+        num = 0
+        for proj in cat.invproj_set.filter(isopen=False, end__gte=lastyear).all():
+            num -= (proj.value*proj.acct.currency.rate).quantize(decimal.Decimal('1.00'))
+            iotab.extend(proj.calc_iotab(td, True))
         if num:
             investments.append((cat.name, num))
     s_investments = sum((n for c, n in investments))
     investments.append(('小计', s_investments))
+
+    def f(r):
+        return sum((value*r**dur for dur, value in iotab))
+    r = fsolve(f, 1.01)[0]
 
     env = {
         'income': income,
@@ -116,6 +130,9 @@ def income_outgoing_sheet(request):
         'total_outgoing': s_outgoing,
         'net_income': s_income+s_investments-s_outgoing,
         'saving_rate': 100*(s_income+s_investments-s_outgoing)/(s_income+s_investments),
+        'invest_income_rate': 100*s_investments/(s_income+s_investments),
+        'invest_outgoing_rate': 100*s_investments/s_outgoing,
+        'invest_rate': 365*100*(r-1),
     }
     return render(request, 'inv/ios.html', env)
 
@@ -138,10 +155,11 @@ def income_details(request):
         s = pd.Series(name=cat.name)
         for proj in cat.invproj_set.filter(isopen=False).all():
             dt = proj.end.replace(day=1)
+            value = (proj.value*proj.acct.currency.rate).quantize(decimal.Decimal('1.00'))
             if dt not in s:
-                s[dt] = -proj.value
+                s[dt] = -value
             else:
-                s[dt] += -proj.value
+                s[dt] += -value
         if s.count():
             df = df.join(s, how='outer')
 

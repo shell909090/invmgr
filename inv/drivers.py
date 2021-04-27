@@ -14,6 +14,11 @@ import investpy
 from bs4 import BeautifulSoup
 
 
+no_proxies = {
+    "http": "",
+    "https": "",
+}
+
 def CoinGecko(_id):
     from pycoingecko import CoinGeckoAPI
     cg = CoinGeckoAPI()
@@ -21,7 +26,7 @@ def CoinGecko(_id):
 
 
 def SGE(_id):
-    resp = requests.get('https://www.sge.com.cn/sjzx/yshqbg')
+    resp = requests.get('https://www.sge.com.cn/sjzx/yshqbg', proxies=no_proxies)
     doc = BeautifulSoup(resp.content, 'lxml')
     for tr in doc.select('div.memberName tr.border_ea'):
         data = [td.get_text() for td in tr.select('td')]
@@ -30,7 +35,7 @@ def SGE(_id):
 
 
 def EastmoneyFund(_id):
-    resp = requests.get(f'http://fund.eastmoney.com/{_id}.html')
+    resp = requests.get(f'http://fund.eastmoney.com/{_id}.html', proxies=no_proxies)
     doc = BeautifulSoup(resp.content, 'lxml')
     for span in doc.select('span.fix_dwjz'):
         return span.get_text()

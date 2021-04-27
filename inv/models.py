@@ -9,6 +9,7 @@ from scipy.optimize import fsolve
 
 from django.db import models
 from django.urls import reverse
+from django.utils.html import format_html
 
 
 class Currency(models.Model):
@@ -59,7 +60,7 @@ class Category(models.Model):
         for a in self.account_set.all():
             values[a.currency.name] = a.value + values.get(a.currency.name, 0)
         for p in self.invproj_set.filter(isopen=True).all():
-            values[p.currency.name] = p.value + values.get(p.currency.name, 0)
+            values[p.acct.currency.name] = p.value + values.get(p.acct.currency.name, 0)
         return values
         
 
@@ -149,10 +150,8 @@ class InvProj(models.Model):
     name = models.CharField('名称', max_length=100)
     code = models.CharField('代码', max_length=50, blank=True, null=True)
     url =  models.URLField('链接', max_length=200, blank=True, null=True)
-    currency = models.ForeignKey(Currency, verbose_name='币种',
-                                 on_delete=models.PROTECT)
-    bank = models.ForeignKey(Bank, verbose_name='银行',
-                             on_delete=models.PROTECT, blank=True, null=True)
+    acct = models.ForeignKey(Account, verbose_name='账户',
+                             on_delete=models.PROTECT)
     cat = models.ForeignKey(Category, verbose_name='类别',
                             on_delete=models.PROTECT)
     risk = models.ForeignKey(Risk, verbose_name='风险级别',
@@ -173,10 +172,54 @@ class InvProj(models.Model):
     dividends = models.DecimalField('分红', max_digits=16, decimal_places=2,
                                     null=True)
     irr = models.DecimalField('年化率', max_digits=16, decimal_places=4, null=True)
+    local_irr = models.DecimalField('本币年化率', max_digits=16, decimal_places=4, null=True)
     comment = models.CharField('注释', max_length=200, blank=True, null=True)
 
     def __str__(self):
         return f'{self.name}'
+
+    def currency(self):
+        return self.acct.currency
+    currency.short_description = '币种'
+
+    def bank(self):
+        return format_html(
+            '<a href="/admin/inv/account/?bank__id__exact={bank_id}">{bank}</a>',
+            bank_id=self.acct.bank.id, bank=self.acct.bank)
+    bank.short_description = '银行'
+
+    def net_value(self):
+        value = -self.value
+        if self.isopen and self.current_price:
+            value += self.amount*self.current_price
+        return format_html(
+            '<a href="{link}">{value}</a>',
+            link=reverse('inv:proj_stat', kwargs={'projid': self.id}),
+            value='{0:0.2f}'.format(value))
+    net_value.short_description = '净值'
+
+    def buy_price(self):
+        if self.buy_amount:
+            return self.buy_value/self.buy_amount
+    buy_price.short_description = '买入均价'
+
+    def sell_price(self):
+        if self.sell_amount:
+            return self.sell_value/self.sell_amount
+    sell_price.short_description = '卖出均价'
+
+    def avg_price(self):
+        if self.amount:
+            return '{0:0.4f}'.format(self.value/self.amount)
+    avg_price.short_description = '成本均价'
+
+    def buy_sell_rate(self):
+        income = self.sell_value+self.dividends+self.amount*self.current_price
+        return 100*income/self.buy_value - 100
+
+    def net_value_rate(self):
+        if self.isopen and self.current_price and self.value:
+            return 100*(self.amount*self.current_price)/self.value - 100
 
     def update_from_rec(self):
         self.buy_amount, self.sell_amount = 0, 0
@@ -198,37 +241,44 @@ class InvProj(models.Model):
             self.start = min((r.date for r in self.invrec_set.all()))
             if not self.isopen:
                 self.end = max((r.date for r in self.invrec_set.all()))
-            self.irr = self.calc_irr()
+            self.irr = self.calc_irr(False)
+            self.local_irr = self.calc_irr(True)
 
         self.save()
 
     def duration(self):
+        if not self.start:
+            return 0
         return ((self.end or datetime.date.today())-self.start).days
     duration.short_description = '存续天数'
 
-    def calc_irr(self):
-        tb = []
+    def calc_iotab(self, td, local):
+        for r in self.invrec_set.all():
+            value = float(r.value if r.cat == 1 else -r.value)
+            if local and r.rate:
+                value *= float(r.rate)
+            yield (td - r.date).days, value
         if self.isopen and self.current_price:
-            value = float(self.amount*self.current_price*self.currency.rate)
-            tb.append((0, -value))
+            value = float(self.amount*self.current_price)
+            if local:
+                value *= float(self.acct.currency.rate)
+            yield 0, -value
+
+    def calc_irr(self, local):
+        if self.isopen and self.current_price:
             td = datetime.date.today()
         else:
             td = max((r.date for r in self.invrec_set.all()))
 
-        for r in self.invrec_set.all():
-            value = float(r.value if r.cat == 1 else -r.value)
-            if r.rate:
-                value *= float(r.rate)
-            tb.append(((td - r.date).days, value))
-        
+        iotab = list(self.calc_iotab(td, local))
         def f(r):
-            return sum((value*r**dur for dur, value in tb))
+            return sum((value*r**dur for dur, value in iotab))
 
-        r = fsolve(f, 1.05)[0]
+        r = fsolve(f, 1.01)[0]
         return 365*100*(r-1)
 
     def update_current_price(self):
-        if not self.isopen or not self.quote_id or not self.cat.driver:
+        if not self.quote_id or not self.cat.driver:
             return
         from . import drivers
         try:
@@ -269,9 +319,25 @@ class InvRec(models.Model):
     def __str__(self):
         return f'{self.proj.name}({self.date})'
 
+    def auto_complete(self):
+        if self.cat == 3:
+            return
+        if self.amount is not None and self.price is not None\
+           and self.value is not None and self.commission is None:
+            self.commission = self.value - self.amount*self.price
+        elif self.amount is not None and self.price is not None\
+             and self.value is None and self.commission is not None:
+            self.value = self.commission + self.amount*self.price
+        elif self.amount is not None and self.price is None\
+             and self.value is not None and self.commission is not None:
+            self.price = (self.value-self.commission) / self.amount
+
     # 如果同时创建一个proj的多个rec，会导致update_from_rec被执行多次。
     # 暂时不管了。未来可能通过flag解决。
     def save(self, *args, **kwargs):
+        self.auto_complete()
+        if not self.pk:
+            self.proj.acct.value -= (self.value if self.cat == 1 else -self.value)
         r = super().save(*args, **kwargs)
         self.proj.update_from_rec()
         return r

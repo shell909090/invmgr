@@ -19,7 +19,7 @@ class InvRecTable(tables.Table):
     class Meta:
 
         model = InvRec
-        fields = ('date', 'cat', 'amount', 'price', 'value', 'rate', 'commission')
+        fields = ('date', 'cat', 'amount', 'price', 'value', 'commission', 'rate')
         template_name = 'django_tables2/bootstrap.html'
         attrs = {'class': 'table'}
         row_attrs = {

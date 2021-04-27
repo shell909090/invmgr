@@ -1,7 +1,6 @@
 from django.contrib import admin
 from django.urls import reverse
 from django.http import HttpResponseRedirect
-from django.utils.html import format_html
 
 from .models import Currency, Category, Bank, Account, AccountCategory, AccountRec, Risk, InvProj, InvRec
 
@@ -17,7 +16,7 @@ class CurrencyAdmin(admin.ModelAdmin):
     accounts.short_description = '账户余额'
 
     def investments(self, currency):
-        return sum((p.value for p in currency.invproj_set.filter(isopen=True).all()))
+        return sum((p.value for p in InvProj.objects.filter(acct__currency=currency, isopen=True).all()))
     investments.short_description = '投资余额'
 
     def total(self, currency):
@@ -46,7 +45,7 @@ class CategoryAdmin(admin.ModelAdmin):
 
     def value_in_local(self, cat):
         s = sum((a.value*a.currency.rate for a in cat.account_set.all()))
-        s += sum((p.value*p.currency.rate
+        s += sum((p.value*p.acct.currency.rate
                   for p in cat.invproj_set.filter(isopen=True).all()))
         return '{0:0.2f}'.format(s)
     value_in_local.short_description = '以本币计总余额'
@@ -64,8 +63,8 @@ class BankAdmin(admin.ModelAdmin):
     def value(self, bank):
         s = sum(((-a.value if a.cat.cat in {2, 4} else a.value)*a.currency.rate
                  for a in bank.account_set.all()))
-        s += sum((p.value*p.currency.rate
-                  for p in bank.invproj_set.filter(isopen=True).all()))
+        s += sum((p.value*p.acct.currency.rate
+                  for p in InvProj.objects.filter(acct__bank=bank, isopen=True).all()))
         return s
     value.short_description = '总计余额'
 
@@ -102,12 +101,12 @@ class RiskAdmin(admin.ModelAdmin):
     list_display = ('name', 'value', 'percentage')
 
     def value(self, risk):
-        return sum((p.value*p.currency.rate
+        return sum((p.value*p.acct.currency.rate
                     for p in risk.invproj_set.filter(isopen=True).all()))
     value.short_description = '总计余额'
 
     def percentage(self, risk):
-        total = sum((p.value*p.currency.rate
+        total = sum((p.value*p.acct.currency.rate
                      for p in InvProj.objects.filter(isopen=True).all()))
         return '{0:0.2f}'.format(100*self.value(risk)/total)
     percentage.short_description = '百分比'
@@ -124,31 +123,14 @@ class InvProjAdmin(admin.ModelAdmin):
                     'value', 'avg_price', 'current_price', 'net_value')
     # list_display_links = ('start',)
     date_hierarchy = 'end'
-    list_filter = ['isopen', 'currency', 'bank', 'cat', 'risk']
+    list_filter = ['isopen', 'acct__currency', 'acct__bank', 'cat', 'risk']
     exclude = ('start', 'amount', 'buy_amount', 'sell_amount',
-               'value', 'buy_value', 'sell_value', 'dividends', 'irr')
+               'value', 'buy_value', 'sell_value', 'dividends', 'irr', 'local_irr')
     inlines = [InvRecInline,]
     actions = ['update_current_price', 'update_from_rec']
 
-    def net_value(self, proj):
-        value = -proj.value
-        if proj.isopen and proj.current_price:
-            value += proj.amount*proj.current_price
-        return format_html(
-            '<a href="{link}">{value}</a>',
-            link=reverse('inv:proj_stat', kwargs={'projid': proj.id}),
-            value='{0:0.2f}'.format(value))
-    net_value.short_description = '净值'
-
-    def avg_buy_price(self, proj):
-        if proj.buy_amount:
-            return '{0:0.4f}'.format(proj.buy_value/proj.buy_amount)
-    avg_buy_price.short_description = '买入均价'
-
-    def avg_price(self, proj):
-        if proj.amount:
-            return '{0:0.4f}'.format(proj.value/proj.amount)
-    avg_price.short_description = '成本均价'
+    def view_on_site(self, obj):
+        return reverse('inv:proj_stat', kwargs={'projid': obj.id})
 
     def save_model(self, request, obj, form, change):
         obj.update_from_rec()
@@ -168,20 +150,3 @@ class InvProjAdmin(admin.ModelAdmin):
 @admin.register(InvRec)
 class InvRecAdmin(admin.ModelAdmin):
     list_display = ('proj', 'date', 'cat', 'amount', 'price', 'value', 'rate', 'commission')
-
-    def auto_complete(self, rec):
-        if rec.cat == 3:
-            return
-        if cat.amount is not None and cat.price is not None\
-           and cat.value is not None and cat.commission is None:
-            cat.commission = cat.value - cat.amount*cat.price
-        elif cat.amount is not None and cat.price is not None\
-             and cat.value is None and cat.commission is not None:
-            cat.value = cat.commission + cat.amount*cat.price
-        elif cat.amount is not None and cat.price is None\
-             and cat.value is not None and cat.commission is not None:
-            cat.price = (cat.value-cat.commission) / cat.amount
-
-    def save_model(self, request, obj, form, change):
-        self.auto_complete(obj)
-        super().save_model(request, obj, form, change)

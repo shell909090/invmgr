@@ -1,7 +1,7 @@
 {% extends 'inv/base.html' %}
 {% load bootstrap3 %}
 
-{% block title %}收入表{% endblock %}
+{% block title %}收支表{% endblock %}
 
 {% block header %}
 <style>
@@ -73,6 +73,33 @@
 	</tbody>
       </table>
     </div>
+
+    <div class="col-sm-6">
+      <table class="table table-striped table-responsive">
+	<tbody>
+	  <tr>
+	    <td>统计</td>
+	    <td></td>
+	  </tr>
+	  <tr>
+	    <td>储蓄率</td>
+	    <td class="money">{{saving_rate|floatformat:-2}} %</td>
+	  </tr>
+	  <tr>
+	    <td>投资收入比</td>
+	    <td class="money">{{invest_income_rate|floatformat:-2}} %</td>
+	  </tr>
+	  <tr>
+	    <td>投资支出比</td>
+	    <td class="money">{{invest_outgoing_rate|floatformat:-2}} %</td>
+	  </tr>
+	  <tr>
+	    <td>投资收益率</td>
+	    <td class="money">{{invest_rate|floatformat:-2}} %</td>
+	  </tr>
+	</tbody>
+      </table>
+    </div>
   </div>
 
   <div class="row">
@@ -83,11 +110,6 @@
 	    <td>总计</td>
 	    <td width="35%"></td>
 	    <td class="money">{{total_income}}</td>
-	  </tr>
-	  <tr>
-	    <td>储蓄率</td>
-	    <td width="35%"></td>
-	    <td class="money">{{saving_rate|floatformat:-2}} %</td>
 	  </tr>
 	</tbody>
       </table>
