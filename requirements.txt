@@ -2,3 +2,5 @@ django >= 2.0
 django-tables2
 django-filter
 django-bootstrap3
+scipy >= 1.1.0
+pandas >= 0.23
