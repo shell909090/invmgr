@@ -1,6 +1,10 @@
 django >= 2.0
-django-tables2
-django-filter
-django-bootstrap3
+django-tables2 >= 2.3
+django-filter >= 2.4
+django-bootstrap3 >= 14.2
+requests >= 2.25
+beautifulsoup4 >= 4.7.1
+pycoingecko >= 1.4
+investpy >= 1.0
 scipy >= 1.1.0
 pandas >= 0.23
